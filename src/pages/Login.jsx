@@ -1,51 +1,57 @@
-
 import { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message, Select, InputNumber } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, message, Tabs } from 'antd';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
-const { Option } = Select;
 
-// Обязательно вставь IP бэкендера
-const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev'; 
+// Замени на IP бэкендера (через ngrok или локальный)
+const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev/api/auth'; 
 
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [programType, setProgramType] = useState('CASHBACK');
+  const [activeTab, setActiveTab] = useState('login'); // 'login' или 'register'
 
   const onFinish = async (values) => {
-    // Упаковываем данные ровно в тот JSON, который ты скинул
-    const payload = {
-      partnerID: values.partnerID,
-      type: values.type,
-      value: values.type === 'CASHBACK' ? values.cashbackPercent : values.stampsCount
-    };
-
-    console.log('Отправляем на вход:', payload);
     setLoading(true);
+    
+    // Выбираем правильный эндпоинт в зависимости от вкладки
+    const endpoint = activeTab === 'login' ? '/login' : '/register';
+    const url = `${API_BASE}${endpoint}`;
 
     try {
-      // Уточни у бэкендеров точный URL для этого стартового запроса (например, /auth или /loyalty)
-      const response = await fetch(`${API_BASE}`, {
+      const response = await fetch(url, {
         method: 'POST',
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
         },
-        body: JSON.stringify(payload)
+        // Отправляем логин и пароль
+        body: JSON.stringify({ 
+          username: values.username, 
+          password: values.password 
+        })
       });
 
       if (response.ok) {
-        message.success('Программа создана, успешный вход!');
+        // ОЖИДАЕМ, ЧТО БЭКЕНД ВЕРНЕТ JSON ВИДА: { "partnerID": 123 }
+        const data = await response.json();
+        
+        // Сохраняем ID партнера в память браузера!
+        localStorage.setItem('loyalT_partnerId', data.partnerID);
+        
+        message.success(activeTab === 'login' ? 'Успешный вход!' : 'Регистрация прошла успешно!');
+        
         // Перекидываем в личный кабинет
         navigate('/dashboard'); 
       } else {
-        message.error(`Ошибка сервера: ${response.status}`);
+        // Если статус 401 или 400
+        message.error(activeTab === 'login' ? 'Неверный логин или пароль' : 'Такой пользователь уже существует');
       }
     } catch (error) {
-      console.error('Ошибка сети:', error);
-      message.error('Бэкенд недоступен. Проверьте сервер и CORS!');
+      console.error(error);
+      message.error('Ошибка подключения к серверу');
     } finally {
       setLoading(false);
     }
@@ -54,53 +60,46 @@ export default function Login() {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
       <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '16px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <Title level={3}>Т-Лояльность <span style={{ color: '#ffdd2d' }}>●</span></Title>
-          <p style={{ color: 'gray' }}>Быстрый старт партнера</p>
+        <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+          <Title level={3}>LoyalT <span style={{ color: '#ffdd2d' }}>●</span></Title>
         </div>
+
+        {/* Вкладки для переключения между Входом и Регистрацией */}
+        <Tabs 
+          centered 
+          activeKey={activeTab} 
+          onChange={(key) => setActiveTab(key)}
+          items={[
+            { key: 'login', label: 'Вход' },
+            { key: 'register', label: 'Регистрация' }
+          ]}
+        />
         
-        <Form 
-          name="login" 
-          onFinish={onFinish} 
-          layout="vertical"
-          initialValues={{ type: 'CASHBACK', cashbackPercent: 5 }}
-        >
-          {/* Поле ID Партнера вместо логина */}
-          <Form.Item name="partnerID" label="ID Партнера" rules={[{ required: true, message: 'Введите ваш ID!' }]}>
-            <Input prefix={<UserOutlined />} placeholder="Например: 1" size="large" />
+        <Form name="auth_form" onFinish={onFinish} layout="vertical" style={{ marginTop: '16px' }}>
+          <Form.Item 
+            name="username" 
+            rules={[{ required: true, message: 'Введите логин!' }]}
+          >
+            <Input prefix={<UserOutlined />} placeholder="Логин" size="large" />
           </Form.Item>
-
-          {/* Выбор типа программы прямо на входе */}
-          <Form.Item name="type" label="Тип программы лояльности">
-            <Select size="large" onChange={(value) => setProgramType(value)}>
-              <Option value="CASHBACK">Кэшбэк (возврат процента)</Option>
-              <Option value="STAMP_CARD">Штампики (N-я покупка в подарок)</Option>
-            </Select>
-          </Form.Item>
-
-          {/* Динамическое поле значения */}
-          {programType === 'CASHBACK' && (
-            <Form.Item name="cashbackPercent" label="Процент кэшбэка (%)" rules={[{ required: true }]}>
-              <InputNumber min={1} max={100} size="large" style={{ width: '100%' }} />
-            </Form.Item>
-          )}
-
-          {programType === 'STAMP_CARD' && (
-            <Form.Item name="stampsCount" label="Количество покупок для подарка" rules={[{ required: true }]}>
-              <InputNumber min={2} max={20} size="large" style={{ width: '100%' }} />
-            </Form.Item>
-          )}
           
-          <Form.Item style={{ marginBottom: 0, marginTop: '24px' }}>
+          <Form.Item 
+            name="password" 
+            rules={[{ required: true, message: 'Введите пароль!' }]}
+          >
+            <Input.Password prefix={<LockOutlined />} placeholder="Пароль" size="large" />
+          </Form.Item>
+          
+          <Form.Item style={{ marginBottom: 0 }}>
             <Button 
               type="primary" 
               htmlType="submit" 
               size="large" 
-              block
+              block 
               loading={loading}
               style={{ background: '#ffdd2d', color: '#000', border: 'none', fontWeight: 'bold' }}
             >
-              {loading ? 'Отправка...' : 'Войти и создать'}
+              {activeTab === 'login' ? 'Войти' : 'Зарегистрироваться'}
             </Button>
           </Form.Item>
         </Form>
@@ -108,4 +107,3 @@ export default function Login() {
     </div>
   );
 }
-
