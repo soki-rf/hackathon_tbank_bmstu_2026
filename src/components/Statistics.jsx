@@ -4,8 +4,8 @@ import { ArrowUpOutlined, UserOutlined, ShoppingCartOutlined, ShopOutlined } fro
 
 const { Title, Text } = Typography;
 
-// БАЗОВЫЙ АДРЕС (вставь IP бэкендера)
-const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev'; 
+const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev/api/analytics'; 
+//const API_BASE = 'https://paralysis-phoenix-siren.ngrok-free.dev/api/analytics'; 
 
 export default function Statistics() {
   const [statsData, setStatsData] = useState({
@@ -17,27 +17,43 @@ export default function Statistics() {
   const [clientsData, setClientsData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Пустой массив зависимостей: вызываем один раз при открытии вкладки
   useEffect(() => {
     const fetchAllData = async () => {
       setLoading(true);
+      
+
+      const partnerLogin = localStorage.getItem('loyalT_login') || 'test_partner'; 
+
+      const toDate = new Date(); 
+      const fromDate = new Date();
+      fromDate.setMonth(fromDate.getMonth() - 1); 
+
+      const fromISO = fromDate.toISOString().slice(0, 19);
+      const toISO = toDate.toISOString().slice(0, 19);
+
       try {
-        // 1. Запрос сводной статистики (уточни точный эндпоинт, например /stats)
-        const statsRes = await fetch(`${API_BASE}`);
+
+        const url = `https://prowess-grove-enroll.ngrok-free.dev/api/analytics/${partnerLogin}/stats?from=${fromISO}&to=${toISO}`;
+
+        const statsRes = await fetch(url, {
+          method: 'GET',
+          headers: { 
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true' 
+          }
+        });
+        
         if (statsRes.ok) {
           const statsJson = await statsRes.json();
+          console.log('Статистика для', partnerLogin, 'получена:', statsJson); 
           setStatsData(statsJson); 
+        } else {
+          message.error(`Ошибка сервера: ${statsRes.status}`);
         }
 
-        // 2. Запрос списка клиентов (уточни точный эндпоинт, например /clients)
-        const clientsRes = await fetch(`${API_BASE}`);
-        if (clientsRes.ok) {
-          const clientsJson = await clientsRes.json();
-          setClientsData(clientsJson); 
-        }
       } catch (error) {
         console.error('Ошибка:', error);
-        message.error('Не удалось загрузить данные с сервера');
+        message.error('Не удалось загрузить аналитику');
       } finally {
         setLoading(false); 
       }
