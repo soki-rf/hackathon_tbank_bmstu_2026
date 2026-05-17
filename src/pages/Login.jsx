@@ -5,18 +5,17 @@ import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
-// Замени на IP бэкендера (через ngrok или локальный)
-const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev/api/auth'; 
+const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev/api/auth';
+//const API_BASE = 'https://paralysis-phoenix-siren.ngrok-free.dev/api'; 
 
 export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('login'); // 'login' или 'register'
+  const [activeTab, setActiveTab] = useState('login'); 
 
   const onFinish = async (values) => {
     setLoading(true);
     
-    // Выбираем правильный эндпоинт в зависимости от вкладки
     const endpoint = activeTab === 'login' ? '/login' : '/register';
     const url = `${API_BASE}${endpoint}`;
 
@@ -27,26 +26,22 @@ export default function Login() {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true'
         },
-        // Отправляем логин и пароль
         body: JSON.stringify({ 
-          username: values.username, 
+          login: values.login, 
           password: values.password 
         })
       });
 
       if (response.ok) {
-        // ОЖИДАЕМ, ЧТО БЭКЕНД ВЕРНЕТ JSON ВИДА: { "partnerID": 123 }
         const data = await response.json();
         
-        // Сохраняем ID партнера в память браузера!
         localStorage.setItem('loyalT_partnerId', data.partnerID);
+        localStorage.setItem('loyalT_login', values.login);
         
         message.success(activeTab === 'login' ? 'Успешный вход!' : 'Регистрация прошла успешно!');
         
-        // Перекидываем в личный кабинет
         navigate('/dashboard'); 
       } else {
-        // Если статус 401 или 400
         message.error(activeTab === 'login' ? 'Неверный логин или пароль' : 'Такой пользователь уже существует');
       }
     } catch (error) {
@@ -64,7 +59,7 @@ export default function Login() {
           <Title level={3}>LoyalT <span style={{ color: '#ffdd2d' }}>●</span></Title>
         </div>
 
-        {/* Вкладки для переключения между Входом и Регистрацией */}
+        {/* переключения между Входом и Регистрацией */}
         <Tabs 
           centered 
           activeKey={activeTab} 
@@ -77,7 +72,7 @@ export default function Login() {
         
         <Form name="auth_form" onFinish={onFinish} layout="vertical" style={{ marginTop: '16px' }}>
           <Form.Item 
-            name="username" 
+            name="login" 
             rules={[{ required: true, message: 'Введите логин!' }]}
           >
             <Input prefix={<UserOutlined />} placeholder="Логин" size="large" />
