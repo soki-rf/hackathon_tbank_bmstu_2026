@@ -1,17 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LoyaltyConstructor from '../components/LoyaltyConstructor';
 import Statistics from '../components/Statistics';
-import { Layout, Menu, Avatar, Space, Typography } from 'antd';
-import { AppstoreOutlined, PieChartOutlined, SettingOutlined } from '@ant-design/icons';
+import { Layout, Menu, Avatar, Space, Typography, Button } from 'antd';
+import { AppstoreOutlined, PieChartOutlined, SettingOutlined, LogoutOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 const { Header, Sider, Content } = Layout;
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('1'); 
+  const [username, setUsername] = useState('Партнер'); 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedLogin = localStorage.getItem('loyalT_login');
+    
+    if (savedLogin) {
+      setUsername(savedLogin); 
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('loyalT_partnerId');
+    localStorage.removeItem('loyalT_login');
+    
+    navigate('/login');
+  };
 
   const menuItems = [
-    //{ key: '1', icon: <AppstoreOutlined />, label: 'Главная' },
     { key: '1', icon: <SettingOutlined />, label: 'Конструктор' },
     { key: '2', icon: <PieChartOutlined />, label: 'Статистика' },
   ];
@@ -29,18 +48,22 @@ export default function Dashboard() {
         <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
           <Title level={4} style={{ margin: 0 }}>Личный кабинет партнера</Title>
           <Space>
-            <Avatar style={{ backgroundColor: '#ffdd2d', color: '#000' }}>КК</Avatar>
-            <Text strong>Константин В.</Text>
+            {/*  Заглавные буквы*/}
+            <Avatar style={{ backgroundColor: '#ffdd2d', color: '#000' }}>
+              {username.substring(0, 2).toUpperCase()}
+            </Avatar>
+            
+            {/*  реальный логин */}
+            <Text strong>{username}</Text>
+            
+            {/* Кнопка выхода */}
+            <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout}>
+              Выход
+            </Button>
           </Space>
         </Header>
         
         <Content style={{ margin: '24px' }}>
-          {/*{ {activeTab === '1' && (
-            <div style={{ padding: 24, minHeight: 360, background: '#fff', borderRadius: '16px' }}>
-              <Title level={2}>Главная панель</Title>
-              <p>Добро пожаловать в систему лояльности!</p>
-            </div>
-          )} }*/}
           {activeTab === '1' && <LoyaltyConstructor />}
           {activeTab === '2' && <Statistics />}
         </Content>
