@@ -5,9 +5,9 @@ import { GiftOutlined, UserOutlined } from '@ant-design/icons';
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-// Замени на IP-адрес твоего бэкендера
 //const API_BASE = 'https://195.19.42.196:8085/api/partners'
-const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev/api/partners'; 
+const API_BASE = 'https://prowess-grove-enroll.ngrok-free.dev/api/partners';
+//const API_BASE = 'https://paralysis-phoenix-siren.ngrok-free.dev/api/partners'; 
 
 export default function LoyaltyConstructor() {
   const [programType, setProgramType] = useState('CASHBACK');
@@ -16,9 +16,8 @@ export default function LoyaltyConstructor() {
   const onFinish = async (values) => {
     const finalValue = values.type === 'CASHBACK' ? values.cashbackPercent : values.stampsCount;
 
-    // 1. Формируем JSON, теперь partnerID лежит внутри тела запроса
     const payload = {
-      id: values.id, // <--- Добавили ID сюда
+      id: values.id, 
       type: values.type, 
       value: finalValue
     };
@@ -26,7 +25,6 @@ export default function LoyaltyConstructor() {
     setLoading(true);
 
     try {
-      // 2. Убираем ID из ссылки. URL становится общим (просто /api/partners)
       const url = `${API_BASE}`; 
 
       const response = await fetch(url, {
@@ -35,7 +33,7 @@ export default function LoyaltyConstructor() {
           'Content-Type': 'application/json', 
           'ngrok-skip-browser-warning': 'true' 
         },
-        body: JSON.stringify(payload) // Отправляем наш обновленный JSON
+        body: JSON.stringify(payload) 
       });
 
       if (response.ok) {
@@ -62,7 +60,7 @@ export default function LoyaltyConstructor() {
         onFinish={onFinish} 
         initialValues={{ type: 'CASHBACK', cashbackPercent: 5 }}
       >
-        {/* Добавили поле partnerID, так как мы скипнули авторизацию */}
+        {/* поле partnerID */}
         <Form.Item name="id" label="ID Партнера" rules={[{ required: true, message: 'Укажите ID партнера' }]}>
           <Input prefix={<UserOutlined />} placeholder="Например: 1" size="large" />
         </Form.Item>
